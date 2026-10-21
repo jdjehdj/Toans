@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đại số nhìn bằng hình học</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef3f8;--card:#fff;--ink:#14213d;--mut:#51607a;--grid:#d5dfeb;--axis:#14213d;--a:#1f6feb;--b:#e8590c;--c:#12a37f;--line:#c9d5e4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1626;--card:#16213a;--ink:#e8eefc;--mut:#9fb0cf;--grid:#26344f;--axis:#e8eefc;--a:#5c9dff;--b:#ff9a5c;--c:#3ddbaa;--line:#2d3d5e}}
+:root[data-theme="dark"]{--bg:#0e1626;--card:#16213a;--ink:#e8eefc;--mut:#9fb0cf;--grid:#26344f;--axis:#e8eefc;--a:#5c9dff;--b:#ff9a5c;--c:#3ddbaa;--line:#2d3d5e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.55}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:clamp(1.6rem,5vw,2.4rem);font-weight:800;margin:8px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:0 0 18px;max-width:60ch}
+nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px}
+nav button{flex:0 0 auto;font:inherit;font-weight:600;padding:9px 14px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;cursor:pointer}
+nav button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:760px){.panel{grid-template-columns:1fr}}
+.stage{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:8px}
+svg{display:block;width:100%;height:auto}
+.side{display:flex;flex-direction:column;gap:14px}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px}
+.box h2{font-size:1rem;margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:3.2rem 1fr 3.6rem;gap:10px;align-items:center;margin:6px 0;font-weight:600}
+.ctl output{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--a)}
+.eq{font-size:1.05rem;font-variant-numeric:tabular-nums;margin:4px 0}
+.A{color:var(--a);font-weight:700}.B{color:var(--b);font-weight:700}.C{color:var(--c);font-weight:700}
+.why{color:var(--mut);margin:8px 0 0;font-size:.95rem}
+svg text{font-family:inherit;fill:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+<h1>Đại số nhìn bằng hình học</h1>
+<p class="sub">Từ tiểu học đến đại học: kéo các thanh trượt, xem công thức biến thành hình ngay trước mắt bạn.</p>
+<nav role="tablist" id="tabs"></nav>
+<section class="panel">
+  <div class="stage"><svg id="svg" viewBox="0 0 400 400" role="img" aria-label="Hình minh họa"></svg></div>
+  <div class="side">
+    <div class="box"><h2 id="ttl"></h2><div id="ctls"></div></div>
+    <div class="box"><h2>Con số tương ứng</h2><div id="out"></div></div>
+    <div class="box"><h2>Ý nghĩa</h2><p class="why" id="why" style="margin:0"></p></div>
+  </div>
+</section>
+</main>
+<script>
+const f=n=>String(+(+n).toFixed(2)).replace('.',',');
+const S=20,C=200,X=x=>C+x*S,Y=y=>C-y*S;
+const sp=(c,t)=>`<span class="${c}">${t}</span>`;
+function grid(){let s='';for(let i=-10;i<=10;i++){s+=`<line x1="${X(i)}" y1="0" x2="${X(i)}" y2="400" stroke="var(--grid)" stroke-width="1"/><line x1="0" y1="${Y(i)}" x2="400" y2="${Y(i)}" stroke="var(--grid)" stroke-width="1"/>`}
+s+=`<line x1="0" y1="${C}" x2="400" y2="${C}" stroke="var(--axis)" stroke-width="1.8"/><line x1="${C}" y1="0" x2="${C}" y2="400" stroke="var(--axis)" stroke-width="1.8"/>`;
+for(let i=-10;i<=10;i+=5)if(i)s+=`<text x="${X(i)}" y="${C+14}" font-size="10" text-anchor="middle">${i}</text><text x="${C-6}" y="${Y(i)+4}" font-size="10" text-anchor="end">${i}</text>`;
+return s}
+const fn=(m,k)=>`<line x1="0" y1="${Y(m*-10+k)}" x2="400" y2="${Y(m*10+k)}"`;
+
+const mods=[
+{id:'sq',name:'(a+b)²',title:'Bình phương một tổng',
+ ctl:[['a',1,9,.5,4],['b',1,9,.5,3]],
+ draw(v){const{a,b}=v,u=26,o=44,w=a*u,h=b*u,r=(x,y,W,H,c,t)=>`<rect x="${o+x}" y="${o+y}" width="${W}" height="${H}" fill="${c}" fill-opacity=".22" stroke="${c}" stroke-width="2.5"/><text x="${o+x+W/2}" y="${o+y+H/2+4}" font-size="13" font-weight="600" text-anchor="middle">${t}</text>`;
+  return `<rect width="400" height="400" fill="none"/>`+r(0,0,w,w,'var(--a)','a² = '+f(a*a))+r(w,0,h,w,'var(--c)','ab = '+f(a*b))+r(0,w,w,h,'var(--c)','ab = '+f(a*b))+r(w,w,h,h,'var(--b)','b² = '+f(b*b))+
+  `<text x="${o+w/2}" y="${o-12}" font-size="13" text-anchor="middle">a</text><text x="${o+w+h/2}" y="${o-12}" font-size="13" text-anchor="middle">b</text><text x="${o-14}" y="${o+w/2+4}" font-size="13" text-anchor="middle">a</text><text x="${o-14}" y="${o+w+h/2+4}" font-size="13" text-anchor="middle">b</text>`},
+ out(v){const{a,b}=v;return `<div class="eq">(a+b)² = ${f(a+b)}² = <b>${f((a+b)**2)}</b></div><div class="eq">${sp('A','a²')} + ${sp('C','2ab')} + ${sp('B','b²')} = ${sp('A',f(a*a))} + ${sp('C',f(2*a*b))} + ${sp('B',f(b*b))} = <b>${f(a*a+2*a*b+b*b)}</b></div>`},
+ why:'Hình vuông cạnh (a+b) được cắt thành 4 mảnh: một hình vuông a², một hình vuông b² và hai hình chữ nhật ab. Cộng diện tích 4 mảnh chính là hằng đẳng thức (a+b)² = a² + 2ab + b². Đổi a, b thế nào thì hai vế vẫn bằng nhau.'},
+{id:'sys',name:'Hệ phương trình',title:'Hai đường thẳng gặp nhau',
+ ctl:[['m₁',-5,5,.5,1],['k₁',-8,8,.5,-2],['m₂',-5,5,.5,-1],['k₂',-8,8,.5,4]],
+ draw(v){const[m1,k1,m2,k2]=v.all;let s=grid()+fn(m1,k1)+` stroke="var(--a)" stroke-width="3"/>`+fn(m2,k2)+` stroke="var(--b)" stroke-width="3"/>`;
+  if(m1!==m2){const x=(k2-k1)/(m1-m2),y=m1*x+k1;if(Math.abs(x)<=10&&Math.abs(y)<=10)s+=`<circle cx="${X(x)}" cy="${Y(y)}" r="7" fill="var(--c)" stroke="var(--card)" stroke-width="2"/><text x="${X(x)+10}" y="${Y(y)-10}" font-size="12" font-weight="600">(${f(x)}; ${f(y)})</text>`}return s},
+ out(v){const[m1,k1,m2,k2]=v.all;let t=`<div class="eq">${sp('A','y = '+f(m1)+'x + '+f(k1))}</div><div class="eq">${sp('B','y = '+f(m2)+'x + '+f(k2))}</div>`;
+  if(m1===m2)return t+`<div class="eq">${k1===k2?'Hai đường trùng nhau: vô số nghiệm.':'Hai đường song song: <b>vô nghiệm</b>.'}</div>`;
+  const x=(k2-k1)/(m1-m2),y=m1*x+k1;return t+`<div class="eq">Cho hai vế bằng nhau: ${f(m1)}x + ${f(k1)} = ${f(m2)}x + ${f(k2)}</div><div class="eq">${sp('C','x = '+f(x)+', y = '+f(y))}</div>`},
+ why:'Mỗi phương trình là một đường thẳng, gồm mọi điểm (x; y) thỏa mãn nó. Nghiệm của hệ là điểm nằm trên cả hai đường, tức giao điểm. Thử làm hai đường song song (cùng m) để thấy vì sao hệ vô nghiệm.'},
+{id:'par',name:'Parabol',title:'Phương trình bậc hai y = ax² + bx + c',
+ ctl:[['a',-3,3,.5,1],['b',-8,8,.5,-2],['c',-8,8,.5,-3]],
+ draw(v){const[a,b,c]=v.all;let p='';for(let x=-10;x<=10.01;x+=.1){p+=(p?'L':'M')+X(x).toFixed(1)+' '+Y(a*x*x+b*x+c).toFixed(1)}
+  let s=grid()+`<path d="${p}" fill="none" stroke="var(--a)" stroke-width="3"/>`;
+  if(a){const D=b*b-4*a*c,vx=-b/(2*a),vy=c-b*b/(4*a);
+   s+=`<line x1="${X(vx)}" y1="0" x2="${X(vx)}" y2="400" stroke="var(--b)" stroke-dasharray="5 5" stroke-width="1.5"/><circle cx="${X(vx)}" cy="${Y(vy)}" r="5" fill="var(--b)"/>`;
+   if(D>=0)[(-b-Math.sqrt(D))/(2*a),(-b+Math.sqrt(D))/(2*a)].forEach(x=>s+=`<circle cx="${X(x)}" cy="${Y(0)}" r="7" fill="var(--c)" stroke="var(--card)" stroke-width="2"/>`)}
+  return s},
+ out(v){const[a,b,c]=v.all;if(!a)return `<div class="eq">a = 0: đây là đường thẳng y = ${f(b)}x + ${f(c)}, không còn là parabol.</div>`;
+  const D=b*b-4*a*c;let t=`<div class="eq">Δ = b² − 4ac = ${f(b*b)} − ${f(4*a*c)} = ${sp('B',f(D))}</div>`;
+  if(D>0)t+=`<div class="eq">${sp('C','2 nghiệm')}: x₁ = ${f((-b-Math.sqrt(D))/(2*a))}, x₂ = ${f((-b+Math.sqrt(D))/(2*a))}</div>`;
+  else if(D===0)t+=`<div class="eq">${sp('C','Nghiệm kép')}: x = ${f(-b/(2*a))}</div>`;else t+=`<div class="eq">Δ &lt; 0: <b>vô nghiệm</b>, parabol không chạm trục hoành.</div>`;
+  return t+`<div class="eq">Đỉnh: (${f(-b/(2*a))}; ${f(c-b*b/(4*a))})</div>`},
+ why:'Giải ax² + bx + c = 0 chính là hỏi: parabol cắt trục hoành ở đâu? Δ > 0 thì cắt 2 điểm, Δ = 0 thì chỉ chạm 1 điểm (đỉnh nằm trên trục), Δ < 0 thì parabol lơ lửng, không chạm. Đường nét đứt là trục đối xứng.'},
+{id:'cir',name:'Đường tròn',title:'(x − h)² + (y − k)² = r²',
+ ctl:[['h',-6,6,.5,1],['k',-6,6,.5,0],['r',1,8,.5,4],['góc',0,360,5,40]],
+ draw(v){const[h,k,r,t]=v.all,q=t*Math.PI/180,px=h+r*Math.cos(q),py=k+r*Math.sin(q);
+  return grid()+`<circle cx="${X(h)}" cy="${Y(k)}" r="${r*S}" fill="var(--a)" fill-opacity=".1" stroke="var(--a)" stroke-width="3"/><line x1="${X(h)}" y1="${Y(k)}" x2="${X(px)}" y2="${Y(k)}" stroke="var(--c)" stroke-width="3.5"/><line x1="${X(px)}" y1="${Y(k)}" x2="${X(px)}" y2="${Y(py)}" stroke="var(--b)" stroke-width="3.5"/><line x1="${X(h)}" y1="${Y(k)}" x2="${X(px)}" y2="${Y(py)}" stroke="var(--ink)" stroke-width="2.5"/><circle cx="${X(h)}" cy="${Y(k)}" r="4" fill="var(--ink)"/><circle cx="${X(px)}" cy="${Y(py)}" r="7" fill="var(--ink)" stroke="var(--card)" stroke-width="2"/>`},
+ out(v){const[h,k,r,t]=v.all,q=t*Math.PI/180,x=h+r*Math.cos(q),y=k+r*Math.sin(q);
+  return `<div class="eq">Điểm M(${f(x)}; ${f(y)}) nằm trên đường tròn</div><div class="eq">${sp('C','(x − h)² = '+f((x-h)**2))} + ${sp('B','(y − k)² = '+f((y-k)**2))}</div><div class="eq">= <b>${f((x-h)**2+(y-k)**2)}</b> = r² = ${f(r*r)}</div>`},
+ why:'Đường tròn là mọi điểm cách tâm (h; k) đúng một khoảng r. Nối tâm với điểm M rồi hạ vuông góc, bạn được tam giác vuông có hai cạnh góc vuông là x − h và y − k, cạnh huyền là r. Phương trình đường tròn chính là định lý Pythagore.'}
+];
+
+const dot=(x,y,c,r=6)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="var(--card)" stroke-width="2"/>`;
+const vec=(x,y,c)=>`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(x)}" y2="${Y(y)}" stroke="${c}" stroke-width="3.5"/>`+dot(X(x),Y(y),c);
+const path=(F,c,x0=-10,x1=10)=>{let p='';for(let x=x0;x<=x1+.01;x+=.1)p+=(p?'L':'M')+X(x).toFixed(1)+' '+Y(F(x)).toFixed(1);return `<path d="${p}" fill="none" stroke="${c}" stroke-width="3"/>`};
+const bar=(y,n,d,c)=>{let s='';for(let i=0;i<d;i++)s+=`<rect x="${30+i*170/d}" y="${y}" width="${170/d}" height="44" fill="${i<n?c:'none'}" fill-opacity=".55" stroke="var(--axis)" stroke-width=".8"/>`;return s};
+mods.push(
+{id:'mul',name:'Phép nhân',title:'Nhân là diện tích hình chữ nhật',
+ ctl:[['m',1,9,1,4],['n₁',1,6,1,3],['n₂',1,6,1,2]],
+ draw(v){const[m,p,q]=v.all;let s='';for(let i=0;i<m;i++)for(let j=0;j<p+q;j++)s+=`<rect x="${30+j*28}" y="${60+i*28}" width="28" height="28" fill="${j<p?'var(--a)':'var(--b)'}" fill-opacity=".5" stroke="var(--card)" stroke-width="2"/>`;return s},
+ out(v){const[m,p,q]=v.all;return `<div class="eq">${m} × (${p} + ${q}) = ${m} × ${p+q} = <b>${m*(p+q)}</b></div><div class="eq">${sp('A',m+' × '+p+' = '+m*p)} + ${sp('B',m+' × '+q+' = '+m*q)} = <b>${m*p+m*q}</b></div>`},
+ why:'m × n là số ô vuông của hình chữ nhật m hàng, n cột. Cắt hình thành hai phần xanh và cam, bạn thấy tính chất phân phối: m × (n₁ + n₂) = m × n₁ + m × n₂.'},
+{id:'frac',name:'Phân số',title:'Cộng hai phân số',
+ ctl:[['tử 1',0,12,1,1],['mẫu 1',1,12,1,2],['tử 2',0,12,1,1],['mẫu 2',1,12,1,3]],
+ draw(v){const[a,b,c,d]=v.all,A=Math.min(a,b),Cc=Math.min(c,d);return bar(50,A,b,'var(--a)')+bar(130,Cc,d,'var(--b)')+bar(230,A*d+Cc*b,b*d,'var(--c)')+`<text x="30" y="40" font-size="13">${A}/${b}</text><text x="30" y="120" font-size="13">${Cc}/${d}</text><text x="30" y="220" font-size="13">tổng (quy đồng mẫu ${b*d})</text>`},
+ out(v){const[a,b,c,d]=v.all,A=Math.min(a,b),Cc=Math.min(c,d);return `<div class="eq">${sp('A',A+'/'+b)} + ${sp('B',Cc+'/'+d)} = ${sp('A',A+'×'+d)}/${b*d} + ${sp('B',Cc+'×'+b)}/${b*d}</div><div class="eq">= ${sp('C',(A*d+Cc*b)+'/'+b*d)} ≈ ${f((A*d+Cc*b)/(b*d))}</div>`},
+ why:'Hai thanh bị chia thành số phần khác nhau nên chưa cộng trực tiếp được. Quy đồng nghĩa là chia cả hai thanh thành cùng số phần nhỏ (b × d phần), khi đó chỉ việc đếm tổng số phần được tô.'},
+{id:'pyt',name:'Pythagore',title:'a² + b² = c²',
+ ctl:[['a',1,6,.5,3],['b',1,6,.5,4]],
+ draw(v){const[a,b]=v.all,s=16,P=(x,y)=>[120+x*s,280-y*s],c=Math.hypot(a,b),poly=(pts,col,t)=>{const q=pts.map(p=>P(...p));const cx=q.reduce((u,p)=>u+p[0],0)/4,cy=q.reduce((u,p)=>u+p[1],0)/4;return `<polygon points="${q.join(' ')}" fill="${col}" fill-opacity=".25" stroke="${col}" stroke-width="2.5"/><text x="${cx}" y="${cy+4}" font-size="13" font-weight="600" text-anchor="middle">${t}</text>`};return poly([[0,0],[a,0],[a,-a],[0,-a]],'var(--a)','a² = '+f(a*a))+poly([[0,0],[0,b],[-b,b],[-b,0]],'var(--c)','b² = '+f(b*b))+poly([[a,0],[0,b],[b,b+a],[a+b,a]],'var(--b)','c² = '+f(c*c))+`<polygon points="${[[0,0],[a,0],[0,b]].map(p=>P(...p)).join(' ')}" fill="var(--ink)" fill-opacity=".15" stroke="var(--ink)" stroke-width="2.5"/>`},
+ out(v){const[a,b]=v.all;return `<div class="eq">${sp('A','a² = '+f(a*a))} + ${sp('C','b² = '+f(b*b))} = <b>${f(a*a+b*b)}</b></div><div class="eq">${sp('B','c² = '+f(a*a+b*b))} nên c = ${f(Math.hypot(a,b))}</div>`},
+ why:'Dựng hình vuông trên mỗi cạnh của tam giác vuông: tổng diện tích hai hình vuông cạnh góc vuông luôn bằng diện tích hình vuông cạnh huyền. Đại số a² + b² = c² chính là phát biểu về diện tích.'},
+{id:'trig',name:'Lượng giác',title:'sin, cos trên đường tròn đơn vị',
+ ctl:[['góc',0,360,5,40]],
+ draw(v){const q=v.a*Math.PI/180,x=200+150*Math.cos(q),y=200-150*Math.sin(q);return `<circle cx="200" cy="200" r="150" fill="none" stroke="var(--line)" stroke-width="2"/><line x1="20" y1="200" x2="380" y2="200" stroke="var(--axis)"/><line x1="200" y1="20" x2="200" y2="380" stroke="var(--axis)"/><line x1="200" y1="200" x2="${x}" y2="200" stroke="var(--c)" stroke-width="4"/><line x1="${x}" y1="200" x2="${x}" y2="${y}" stroke="var(--b)" stroke-width="4"/><line x1="200" y1="200" x2="${x}" y2="${y}" stroke="var(--ink)" stroke-width="2.5"/>`+dot(x,y,'var(--ink)',7)},
+ out(v){const q=v.a*Math.PI/180,c=Math.cos(q),s=Math.sin(q);return `<div class="eq">${sp('C','cos '+v.a+'° = '+f(c))} (hoành độ)</div><div class="eq">${sp('B','sin '+v.a+'° = '+f(s))} (tung độ)</div><div class="eq">cos² + sin² = ${f(c*c+s*s)}</div><div class="eq">tan = sin/cos = ${Math.abs(c)<1e-9?'không xác định':f(s/c)}</div>`},
+ why:'Với đường tròn bán kính 1, điểm ứng với góc α có tọa độ (cos α; sin α). Hệ thức sin² + cos² = 1 chính là Pythagore, và cos, sin đổi dấu theo góc phần tư mà điểm đang nằm.'},
+{id:'der',name:'Đạo hàm',title:'Đạo hàm là độ dốc tiếp tuyến, f(x) = 0,1x³ − x',
+ ctl:[['x₀',-6,6,.5,2],['h',.1,5,.1,3]],
+ draw(v){const F=x=>.1*x**3-x,[x0,h]=v.all,y0=F(x0),s=(F(x0+h)-y0)/h,t=.3*x0*x0-1;return grid()+path(F,'var(--a)')+fn(s,y0-s*x0)+` stroke="var(--b)" stroke-width="2.5"/>`+fn(t,y0-t*x0)+` stroke="var(--c)" stroke-width="2.5" stroke-dasharray="6 5"/>`+dot(X(x0),Y(y0),'var(--ink)')+dot(X(x0+h),Y(F(x0+h)),'var(--b)')},
+ out(v){const F=x=>.1*x**3-x,[x0,h]=v.all,s=(F(x0+h)-F(x0))/h;return `<div class="eq">${sp('B','Cát tuyến')}: [f(x₀+h) − f(x₀)] / h = ${f(s)}</div><div class="eq">${sp('C','Tiếp tuyến')}: f′(x₀) = 0,3x₀² − 1 = ${f(.3*x0*x0-1)}</div>`},
+ why:'Cát tuyến nối hai điểm trên đồ thị, hệ số góc là (f(x₀+h) − f(x₀))/h. Kéo h về gần 0, cát tuyến (cam) trùng dần với tiếp tuyến (xanh lục nét đứt): đó là định nghĩa đạo hàm bằng giới hạn.'},
+{id:'int',name:'Tích phân',title:'Diện tích dưới y = x²/8 trên [0; a]',
+ ctl:[['a',1,9,.5,6],['n',1,40,1,6]],
+ draw(v){const F=x=>x*x/8,[a,n]=v.all,dx=a/n;let s=grid();for(let i=0;i<n;i++){const x=i*dx,h=F(x);s+=`<rect x="${X(x)}" y="${Y(h)}" width="${dx*S}" height="${h*S}" fill="var(--a)" fill-opacity=".35" stroke="var(--a)" stroke-width=".8"/>`}return s+path(F,'var(--b)',0,10)},
+ out(v){const[a,n]=v.all,dx=a/n;let t=0;for(let i=0;i<n;i++)t+=(i*dx)**2/8*dx;const e=a**3/24;return `<div class="eq">Tổng ${n} hình chữ nhật = ${sp('A',f(t))}</div><div class="eq">Tích phân ∫₀ᵃ x²/8 dx = a³/24 = ${sp('C',f(e))}</div><div class="eq">Sai lệch: ${f(e-t)}</div>`},
+ why:'Chia đoạn [0; a] thành n dải mỏng, mỗi dải là một hình chữ nhật. Tăng n thì tổng diện tích tiến sát diện tích thật dưới đường cong. Tích phân là giới hạn của tổng đó khi n → ∞.'},
+{id:'mat',name:'Ma trận',title:'Ma trận 2×2 biến hình vuông thành hình bình hành',
+ ctl:[['a',-3,3,.5,2],['b',-3,3,.5,1],['c',-3,3,.5,0],['d',-3,3,.5,1.5]],
+ draw(v){const[a,b,c,d]=v.all,pl=(p,col,o)=>`<polygon points="${p.map(q=>X(q[0])+','+Y(q[1])).join(' ')}" fill="${col}" fill-opacity="${o}" stroke="${col}" stroke-width="2.5"/>`;return grid()+pl([[0,0],[a,c],[a+b,c+d],[b,d]],'var(--a)',.3)+pl([[0,0],[1,0],[1,1],[0,1]],'var(--b)',.5)+vec(a,c,'var(--a)')+vec(b,d,'var(--c)')},
+ out(v){const[a,b,c,d]=v.all,D=a*d-b*c;return `<div class="eq">A = [${f(a)} ${f(b)}; ${f(c)} ${f(d)}]</div><div class="eq">Cột 1 = (${f(a)}; ${f(c)}) là ảnh của (1; 0)</div><div class="eq">Cột 2 = (${f(b)}; ${f(d)}) là ảnh của (0; 1)</div><div class="eq">det A = ad − bc = ${sp('C',f(D))}${D===0?' : hình bị ép thành đoạn thẳng, A không khả nghịch':''}</div>`},
+ why:'Hai cột của ma trận cho biết hai vectơ đơn vị bị đưa đi đâu, và hình vuông đơn vị (cam, diện tích 1) trở thành hình bình hành xanh. Định thức |det A| chính là diện tích hình bình hành; det âm nghĩa là hình bị lật.'},
+{id:'cx',name:'Số phức',title:'Nhân hai số phức z · w',
+ ctl:[['x₁',-4,4,.5,2],['y₁',-4,4,.5,1],['x₂',-4,4,.5,1],['y₂',-4,4,.5,2]],
+ draw(v){const[a,b,c,d]=v.all;return grid()+vec(a,b,'var(--a)')+vec(c,d,'var(--b)')+vec(a*c-b*d,a*d+b*c,'var(--c)')},
+ out(v){const[a,b,c,d]=v.all,g=(x,y)=>Math.atan2(y,x)*180/Math.PI;return `<div class="eq">z = ${sp('A',f(a)+' + '+f(b)+'i')}, w = ${sp('B',f(c)+' + '+f(d)+'i')}</div><div class="eq">z·w = ${sp('C',f(a*c-b*d)+' + '+f(a*d+b*c)+'i')}</div><div class="eq">|z|·|w| = ${f(Math.hypot(a,b)*Math.hypot(c,d))}; góc: ${f(g(a,b))}° + ${f(g(c,d))}° = ${f(g(a,b)+g(c,d))}°</div>`},
+ why:'Mỗi số phức là một mũi tên trên mặt phẳng. Nhân hai số phức thì độ dài nhân với nhau và góc cộng lại, nên nhân với i là quay 90°. Đại số của i² = −1 hóa ra là phép quay.'}
+);
+const LV={mul:'Tiểu học',frac:'Tiểu học',sq:'THCS',sys:'THCS',par:'THCS',pyt:'THCS',cir:'THPT',trig:'THPT',der:'THPT',int:'Đại học',mat:'Đại học',cx:'Đại học'},ORD=['Tiểu học','THCS','THPT','Đại học'];
+const fa=n=>n<2?1:n*fa(n-1),ax=(sx,sy)=>`<line x1='0' y1='200' x2='400' y2='200' stroke='var(--axis)' stroke-width='1.5'/><line x1='${sx}' y1='0' x2='${sx}' y2='400' stroke='var(--axis)' stroke-width='1.5'/>`;
+mods.push(
+{id:'log',name:'Lôgarit',title:'Lôgarit là phép ngược của lũy thừa',
+ ctl:[['cơ số a',1.5,5,.5,2],['số mũ t',-2,3,.5,3]],
+ draw(v){const[a,t]=v.all,y=a**t;return grid()+path(x=>a**x,'var(--a)')+path(x=>Math.log(x)/Math.log(a),'var(--b)',.1,10)+fn(1,0)+` stroke='var(--axis)' stroke-dasharray='5 5' stroke-width='1.5'/>`+dot(X(t),Y(y),'var(--a)',7)+dot(X(y),Y(t),'var(--b)',7)},
+ out(v){const[a,t]=v.all,y=a**t;return `<div class='eq'>${sp('A',f(a)+'<sup>'+f(t)+'</sup> = '+f(y))} (điểm xanh dương)</div><div class='eq'>${sp('B','log<sub>'+f(a)+'</sub>('+f(y)+') = '+f(t))} (điểm cam)</div>`},
+ why:'Đường xanh dương là y = aˣ: đưa vào số mũ x, nhận ra kết quả y.|Lôgarit hỏi ngược lại: kết quả là y thì số mũ là bao nhiêu? Vì vậy điểm cam có tọa độ là điểm xanh dương đã đổi chỗ x và y.|Đổi chỗ x và y nghĩa là lật hình qua đường nét đứt y = x, nên đồ thị y = logₐx là hình lật của y = aˣ.|Kết luận: aᵗ = y tương đương logₐ y = t. Đồ thị lôgarit chỉ có x > 0 vì lũy thừa dương luôn cho kết quả dương.'},
+{id:'amgm',name:'Bất đẳng thức Cô-si',title:'Tổng không đổi thì hình vuông có diện tích lớn nhất',
+ ctl:[['tổng S',4,16,1,12],['cạnh x',.5,15.5,.5,3]],
+ draw(v){const S=v.a,x=Math.min(v.all[1],S-.5),u=20;return `<rect x='40' y='40' width='${S/2*u}' height='${S/2*u}' fill='none' stroke='var(--b)' stroke-width='2.5' stroke-dasharray='6 5'/><rect x='40' y='40' width='${x*u}' height='${(S-x)*u}' fill='var(--a)' fill-opacity='.35' stroke='var(--a)' stroke-width='2.5'/><text x='${40+x*u/2}' y='32' font-size='13' text-anchor='middle'>x = ${f(x)}</text><text x='34' y='${40+(S-x)*u/2}' font-size='13' text-anchor='end'>${f(S-x)}</text>`},
+ out(v){const S=v.a,x=Math.min(v.all[1],S-.5);return `<div class='eq'>${sp('A','Hình chữ nhật: x(S − x) = '+f(x*(S-x)))}</div><div class='eq'>${sp('B','Hình vuông: (S/2)² = '+f(S*S/4))}</div><div class='eq'>Chênh lệch: ${f(S*S/4-x*(S-x))} = (S/2 − x)² ≥ 0</div>`},
+ why:'Hình chữ nhật xanh có hai cạnh x và S − x, nên chu vi luôn là 2S dù bạn kéo x thế nào.|Khung nét đứt cam là hình vuông cùng chu vi, cạnh S/2.|Kéo x về gần S/2: hình chữ nhật dần đầy khung cam. Khi x = S/2 thì hai hình trùng nhau.|Kết luận: x(S − x) ≤ (S/2)², tức √(ab) ≤ (a + b)/2. Dấu bằng chỉ xảy ra khi a = b.'},
+{id:'sint',name:'Tích phân sin',title:'∫₀ᵇ sin x dx = 1 − cos b',
+ ctl:[['b',0,6.28,.1,2]],
+ draw(v){const b=v.a,P=(x,y)=>[40+x*52,200-y*70];let d='M'+P(0,0),w='';for(let x=0;x<=b+.001;x+=.05)d+='L'+P(x,Math.sin(x));d+='L'+P(b,0)+'Z';for(let x=0;x<=6.29;x+=.05)w+=(w?'L':'M')+P(x,Math.sin(x));return ax(40,0)+`<path d='${d}' fill='var(--a)' fill-opacity='.35'/><path d='${w}' fill='none' stroke='var(--b)' stroke-width='3'/><text x='${P(Math.PI,0)[0]}' y='216' font-size='12' text-anchor='middle'>π</text><text x='${P(6.28,0)[0]}' y='216' font-size='12' text-anchor='middle'>2π</text>`},
+ out(v){const b=v.a;return `<div class='eq'>Diện tích có dấu từ 0 đến ${f(b)} = ${sp('A','1 − cos('+f(b)+') = '+f(1-Math.cos(b)))}</div><div class='eq'>${b>Math.PI?'Phần dưới trục hoành được tính âm':'Toàn bộ phần tô nằm trên trục hoành'}</div>`},
+ why:'Phần xanh là diện tích giữa đường cong sin x và trục hoành, từ 0 đến b.|Kéo b từ 0 đến π: diện tích tăng dần, đạt 2 khi b = π (nguyên hàm của sin x là −cos x, và −cos π − (−cos 0) = 2).|Kéo b qua π: đường cong nằm dưới trục hoành, phần đó tính là diện tích âm nên tổng giảm.|Đến b = 2π, phần dương và phần âm triệt tiêu nhau, tích phân bằng 0.'},
+{id:'lim',name:'Giới hạn số e',title:'Dãy (1 + 1/n)ⁿ tiến đến e',
+ ctl:[['n tới',1,50,1,10]],
+ draw(v){const N=v.a,E=360-(Math.E-2)*440;let s=`<line x1='30' y1='${E}' x2='390' y2='${E}' stroke='var(--b)' stroke-dasharray='6 5' stroke-width='2'/><text x='34' y='${E-6}' font-size='12'>e ≈ 2,718</text>`;for(let n=1;n<=N;n++)s+=dot(30+n*6.8,360-((1+1/n)**n-2)*440,'var(--a)',3.5);return s},
+ out(v){const N=v.a,u=(1+1/N)**N;return `<div class='eq'>(1 + 1/${N})<sup>${N}</sup> = ${sp('A',u.toFixed(5).replace('.',','))}</div><div class='eq'>e = 2,71828...; còn thiếu ${sp('B',(Math.E-u).toFixed(5).replace('.',','))}</div>`},
+ why:'Mỗi chấm xanh là giá trị của (1 + 1/n)ⁿ ứng với một n (trục ngang là n).|Các chấm luôn tăng nhưng tăng chậm dần, không bao giờ vượt đường nét đứt cam.|Kéo n lớn lên: khoảng cách đến đường cam nhỏ dần. Giá trị cam chính là số e.|Đó là nghĩa của giới hạn: có thể tiến gần một số tùy ý mà không cần chạm tới.'},
+{id:'lat',name:'Đếm đường đi',title:'Đường đi trên lưới và tổ hợp',
+ ctl:[['ngang m',1,7,1,4],['dọc n',1,7,1,3]],
+ draw(v){const[m,n]=v.all;const g=[];let s='';for(let i=0;i<=n;i++){g[i]=[];for(let j=0;j<=m;j++){g[i][j]=i&&j?g[i-1][j]+g[i][j-1]:1;const last=i==n&&j==m;s+=`<circle cx='${50+j*44}' cy='${60+i*44}' r='19' fill='${last?'var(--c)':'var(--a)'}' fill-opacity='${last?.6:.2}' stroke='var(--a)' stroke-width='1.5'/><text x='${50+j*44}' y='${64+i*44}' font-size='11' font-weight='600' text-anchor='middle'>${g[i][j]}</text>`}}return s},
+ out(v){const[m,n]=v.all;let c=1;for(let i=1;i<=n;i++)c=c*(m+i)/i;return `<div class='eq'>Từ góc trên trái đến ô cuối chỉ đi sang phải hoặc xuống: ${sp('C',Math.round(c)+' cách')}</div><div class='eq'>C(${m+n}; ${n}) = ${m+n}! / (${m}! · ${n}!) = ${Math.round(c)}</div>`},
+ why:'Mỗi ô ghi số cách đi từ góc trên trái đến ô đó (chỉ được sang phải hoặc xuống).|Để đến một ô chỉ có hai cách: từ ô bên trái hoặc từ ô phía trên. Vậy số ở ô = tổng hai ô đó.|Quy tắc cộng này chính là tam giác Pascal.|Ô cuối (màu xanh lá) bằng C(m + n; n): trong m + n bước, chọn ra n bước đi xuống.'},
+{id:'tay',name:'Chuỗi Taylor',title:'Xấp xỉ sin x bằng đa thức',
+ ctl:[['số hạng',1,8,1,2]],
+ draw(v){const n=v.a,T=x=>{let s=0;for(let k=0;k<n;k++)s+=(-1)**k*x**(2*k+1)/fa(2*k+1);return s},pp=(F,c)=>{let p='';for(let x=-10;x<=10.01;x+=.1)p+=(p?'L':'M')+X(x).toFixed(1)+' '+(200-F(x)*45).toFixed(1);return `<path d='${p}' fill='none' stroke='${c}' stroke-width='3'/>`};return ax(200,0)+pp(Math.sin,'var(--b)')+pp(T,'var(--a)')},
+ out(v){const n=v.a;let t='x';for(let k=1;k<n;k++)t+=(k%2?' − ':' + ')+'x<sup>'+(2*k+1)+'</sup>/'+(2*k+1)+'!';return `<div class='eq'>${sp('A','P(x) = '+t)}</div><div class='eq'>${sp('B','Đường cam')} là sin x thật, ${sp('A','đường xanh')} là đa thức.</div>`},
+ why:'Đường cam là sin x. Đường xanh là một đa thức cộng từ các hạng tử x, −x³/3!, x⁵/5!...|Với 1 hạng tử, đa thức chỉ là đường thẳng y = x, chỉ khớp với sin x rất gần gốc 0.|Thêm từng hạng tử: vùng khớp với sin x được mở rộng ra hai phía.|Nhiều hạng tử vô hạn sẽ cho đúng sin x. Đó là ý tưởng chuỗi Taylor: dùng đa thức, thứ dễ tính nhất, để xấp xỉ hàm bất kỳ.'}
+);
+const gcd=(x,y)=>y?gcd(y,x%y):x;
+mods.push(
+{id:'gcd',name:'ƯCLN',title:'Tìm ƯCLN bằng cách cắt hình vuông',
+ ctl:[['a',2,30,1,18],['b',2,30,1,12]],
+ draw(v){const[a,b]=v.all,u=Math.min(340/a,340/b),col=['var(--a)','var(--b)','var(--c)'];let x=0,y=0,w=a,h=b,i=0,s='';while(w>0&&h>0){const z=Math.min(w,h),k=Math.floor(Math.max(w,h)/z),H=w>=h;for(let j=0;j<k;j++)s+=`<rect x='${30+(H?x+j*z:x)*u}' y='${30+(H?y:y+j*z)*u}' width='${z*u}' height='${z*u}' fill='${col[i%3]}' fill-opacity='.4' stroke='var(--card)' stroke-width='2'/>`;if(H){x+=k*z;w-=k*z}else{y+=k*z;h-=k*z}i++}return s},
+ out(v){let[x,y]=[Math.max(...v.all),Math.min(...v.all)],t='';while(y){t+=`<div class='eq'>${x} = ${Math.floor(x/y)} × ${y} + ${x%y}</div>`;[x,y]=[y,x%y]}return t+`<div class='eq'>ƯCLN = ${sp('C',x)}</div>`},
+ why:'Hình chữ nhật a × b được cắt dần: mỗi lần cắt bỏ các hình vuông to nhất có thể.|Phần còn lại là hình chữ nhật nhỏ hơn, lại cắt tiếp. Mỗi lần cắt tương ứng một dòng phép chia có dư ở bên cạnh.|Khi không còn dư, hình vuông cuối cùng lấp đầy phần còn lại. Cạnh của nó chính là ƯCLN, vì nó xếp vừa khít cả hai cạnh a và b.'},
+{id:'gauss',name:'Tổng 1+2+...+n',title:'Cách của Gauss: ghép hai bậc thang',
+ ctl:[['n',1,16,1,6]],
+ draw(v){const n=v.a,u=Math.min(20,340/(n+1));let s='';for(let j=0;j<n;j++)for(let i=0;i<=n;i++)s+=`<rect x='${30+j*u}' y='${30+(n-i)*u}' width='${u}' height='${u}' fill='${i<=j?'var(--a)':'var(--b)'}' fill-opacity='.45' stroke='var(--card)' stroke-width='1.5'/>`;return s},
+ out(v){const n=v.a;return `<div class='eq'>${sp('A','Bậc thang xanh')}: 1 + 2 + ... + ${n} = <b>${n*(n+1)/2}</b></div><div class='eq'>Hình chữ nhật ${n} × ${n+1} = ${n*(n+1)} ô = 2 × ${n*(n+1)/2}</div>`},
+ why:'Các ô xanh xếp thành bậc thang gồm 1, 2, ..., n ô.|Ghép thêm một bậc thang y hệt (màu cam) lật ngược lại, hai bậc thang khít nhau thành hình chữ nhật n × (n+1).|Hình chữ nhật có n(n+1) ô, mỗi bậc thang chiếm một nửa. Vậy 1 + 2 + ... + n = n(n+1)/2.'},
+{id:'ineq',name:'Bất phương trình',title:'Miền nghiệm của ax + by < c',
+ ctl:[['a',-3,3,.5,1],['b',-3,3,.5,1],['c',-8,8,.5,2]],
+ draw(v){const[a,b,c]=v.all;let s='';for(let i=-10;i<10;i++)for(let j=-10;j<10;j++)if(a*(i+.5)+b*(j+.5)<c)s+=`<rect x='${X(i)}' y='${Y(j+1)}' width='20' height='20' fill='var(--a)' fill-opacity='.2'/>`;s=grid()+s;if(b)s+=fn(-a/b,c/b)+` stroke='var(--b)' stroke-width='3'/>`;else if(a)s+=`<line x1='${X(c/a)}' y1='0' x2='${X(c/a)}' y2='400' stroke='var(--b)' stroke-width='3'/>`;return s},
+ out(v){const[a,b,c]=v.all;return `<div class='eq'>${f(a)}x + ${f(b)}y &lt; ${f(c)}</div><div class='eq'>Thử gốc (0; 0): 0 &lt; ${f(c)} là ${sp(0<c?'C':'B',0<c?'đúng':'sai')}, nên gốc ${0<c?'nằm trong':'nằm ngoài'} miền nghiệm.</div>`},
+ why:'Đường cam là ax + by = c: các điểm làm hai vế bằng nhau.|Đường này chia mặt phẳng thành hai nửa. Một nửa gồm các điểm thỏa ax + by < c (phần tô xanh), nửa kia thì không.|Cách kiểm tra nhanh: thay thử một điểm bất kỳ, ví dụ gốc (0; 0), vào bất phương trình. Đúng thì cả nửa mặt phẳng chứa điểm đó là miền nghiệm.'},
+{id:'cos',name:'Định lý cosin',title:'a² = b² + c² − 2bc·cos A',
+ ctl:[['b',2,9,.5,6],['c',2,9,.5,5],['góc A',20,160,5,60]],
+ draw(v){const[b,c,A]=v.all,r=A*Math.PI/180,P=(x,y)=>[200+x*20,300-y*20],pa=P(0,0),pb=P(c,0),pc=P(b*Math.cos(r),b*Math.sin(r)),mid=(p,q,t)=>`<text x='${(p[0]+q[0])/2}' y='${(p[1]+q[1])/2+(t=='c'?18:-6)}' font-size='13' font-weight='600' text-anchor='middle'>${t}</text>`;return `<polygon points='${[pa,pb,pc].join(' ')}' fill='var(--a)' fill-opacity='.2' stroke='var(--a)' stroke-width='3'/>`+mid(pa,pb,'c')+mid(pa,pc,'b')+mid(pb,pc,'a')+`<text x='${pa[0]+12}' y='${pa[1]-8}' font-size='12'>A = ${A}°</text>`},
+ out(v){const[b,c,A]=v.all,t=2*b*c*Math.cos(A*Math.PI/180);return `<div class='eq'>a² = ${f(b*b)} + ${f(c*c)} ${sp('B','− '+f(t))} = ${f(b*b+c*c-t)}</div><div class='eq'>a = ${f(Math.sqrt(b*b+c*c-t))}</div><div class='eq'>${A==90?'A = 90° nên số hạng cam bằng 0: đây là Pythagore.':A<90?'A nhọn: số hạng cam dương, a² nhỏ hơn b² + c².':'A tù: số hạng cam âm, a² lớn hơn b² + c².'}</div>`},
+ why:'Cho hai cạnh b, c và góc A giữa chúng, tam giác hoàn toàn xác định. Cạnh a đối diện góc A.|Kéo góc A về 90°: số hạng −2bc·cos A biến mất, còn a² = b² + c². Đây là Pythagore.|Góc A nhỏ hơn 90° thì hai cạnh khép lại, a ngắn đi so với Pythagore. Góc A lớn hơn 90° thì a dài ra. Số hạng −2bc·cos A chính là phần hiệu chỉnh đó.'},
+{id:'prob',name:'Xác suất xúc xắc',title:'Gieo hai con xúc xắc',
+ ctl:[['tổng s',2,12,1,7]],
+ draw(v){let s='';for(let i=1;i<=6;i++)for(let j=1;j<=6;j++){const x=50+(i-1)*52,y=50+(j-1)*52,hit=i+j==v.a;s+=`<rect x='${x}' y='${y}' width='50' height='50' rx='6' fill='${hit?'var(--c)':'none'}' fill-opacity='.5' stroke='var(--line)' stroke-width='1.5'/><text x='${x+25}' y='${y+30}' font-size='14' text-anchor='middle'>${i+j}</text>`}for(let i=1;i<=6;i++)s+=`<text x='${25+i*52}' y='40' font-size='13' text-anchor='middle'>${i}</text><text x='36' y='${30+i*52}' font-size='13' text-anchor='end'>${i}</text>`;return s},
+ out(v){const k=6-Math.abs(v.a-7);return `<div class='eq'>Số ô có tổng ${v.a}: ${sp('C',k)} trên 36 ô</div><div class='eq'>P(tổng = ${v.a}) = ${k}/36 = ${f(k/36)} ≈ ${f(k/.36)}%</div>`},
+ why:'Mỗi ô là một kết quả có thể xảy ra của hai con xúc xắc (cột là con thứ nhất, hàng là con thứ hai). Có 36 ô, mỗi ô khả năng như nhau.|Số trong ô là tổng hai mặt. Các ô xanh lá là những ô có tổng bằng s bạn chọn.|Xác suất = số ô xanh / 36. Tổng 7 có nhiều ô nhất (6 ô) nên hay gặp nhất; tổng 2 và 12 chỉ có 1 ô.'},
+{id:'ell',name:'Elip',title:'Elip: tổng khoảng cách tới hai tiêu điểm không đổi',
+ ctl:[['a',2,9,.5,7],['b',1,9,.5,4],['góc',0,360,5,50]],
+ draw(v){const a=v.all[0],b=Math.min(v.all[1],a),cc=Math.sqrt(a*a-b*b),t=v.all[2]*Math.PI/180,px=a*Math.cos(t),py=b*Math.sin(t),ln=(x,c)=>`<line x1='${X(x)}' y1='${Y(0)}' x2='${X(px)}' y2='${Y(py)}' stroke='${c}' stroke-width='3'/>`;return grid()+`<ellipse cx='200' cy='200' rx='${a*S}' ry='${b*S}' fill='var(--a)' fill-opacity='.1' stroke='var(--a)' stroke-width='3'/>`+ln(-cc,'var(--b)')+ln(cc,'var(--c)')+dot(X(-cc),Y(0),'var(--ink)',5)+dot(X(cc),Y(0),'var(--ink)',5)+dot(X(px),Y(py),'var(--ink)',7)},
+ out(v){const a=v.all[0],b=Math.min(v.all[1],a),cc=Math.sqrt(a*a-b*b),t=v.all[2]*Math.PI/180,px=a*Math.cos(t),py=b*Math.sin(t),d1=Math.hypot(px+cc,py),d2=Math.hypot(px-cc,py);return `<div class='eq'>${sp('B','d₁ = '+f(d1))} + ${sp('C','d₂ = '+f(d2))} = <b>${f(d1+d2)}</b> = 2a</div><div class='eq'>x²/${f(a*a)} + y²/${f(b*b)} = 1; tiêu cự c = ${f(cc)}</div>`},
+ why:'Hai chấm đen là tiêu điểm. Từ một điểm trên elip kẻ hai đoạn thẳng tới hai tiêu điểm (cam và xanh lá).|Kéo góc để điểm chạy quanh elip: d₁ và d₂ thay đổi nhưng tổng d₁ + d₂ luôn bằng 2a.|Đó là định nghĩa hình học của elip. Phương trình x²/a² + y²/b² = 1 là cách viết bằng đại số của cùng điều đó, với c² = a² − b².'},
+{id:'norm',name:'Phân phối chuẩn',title:'Đường cong hình chuông',
+ ctl:[['μ',-4,4,.5,0],['σ',.5,3,.25,1],['k (số σ)',.5,3,.5,1]],
+ draw(v){const[m,s,k]=v.all,G=x=>Math.exp(-(((x-m)/s)**2)/2)/(s*Math.sqrt(2*Math.PI))*400,P=x=>X(x).toFixed(1)+' '+(360-G(x)).toFixed(1);let c='',d='M'+X(m-k*s)+' 360';for(let x=-10;x<=10.01;x+=.1)c+=(c?'L':'M')+P(x);for(let x=m-k*s;x<=m+k*s+.01;x+=.1)d+='L'+P(x);d+='L'+X(m+k*s)+' 360Z';return `<line x1='0' y1='360' x2='400' y2='360' stroke='var(--axis)' stroke-width='1.5'/><path d='${d}' fill='var(--a)' fill-opacity='.35'/><path d='${c}' fill='none' stroke='var(--b)' stroke-width='3'/><line x1='${X(m)}' y1='40' x2='${X(m)}' y2='360' stroke='var(--axis)' stroke-dasharray='5 5'/>`},
+ out(v){const k=v.all[2];let p=0;const n=400,h=2*k/n;for(let i=0;i<n;i++){const z=-k+(i+.5)*h;p+=Math.exp(-z*z/2)/Math.sqrt(2*Math.PI)*h}return `<div class='eq'>P(μ − ${f(k)}σ < X < μ + ${f(k)}σ) = ${sp('A',f(p*100)+'%')}</div><div class='eq'>Các mốc quen thuộc: 1σ ≈ 68%, 2σ ≈ 95%, 3σ ≈ 99,7%</div>`},
+ why:'Trục ngang là giá trị của X, đường nét đứt là trung bình μ. Cao nhất ở μ vì giá trị gần trung bình hay gặp nhất.|σ là độ lệch chuẩn: σ nhỏ thì đường cong cao và hẹp, σ lớn thì thấp và bẹt. Diện tích dưới toàn đường cong luôn bằng 1.|Xác suất = diện tích phần tô xanh, nằm trong k lần σ quanh μ. Kéo k thấy phần tô lớn dần lên và tiến gần 100%.'},
+{id:'eig',name:'Giá trị riêng',title:'Ma trận đối xứng kéo giãn theo hai hướng riêng',
+ ctl:[['a',-3,3,.5,2],['b',-3,3,.5,1],['d',-3,3,.5,2]],
+ draw(v){const[a,b,d]=v.all,m=(a+d)/2,r=Math.hypot((a-d)/2,b),th=.5*Math.atan2(2*b,a-d),l1=m+r,l2=m-r;let p='';for(let t=0;t<=6.29;t+=.05)p+=(p?'L':'M')+X(a*Math.cos(t)+b*Math.sin(t)).toFixed(1)+' '+Y(b*Math.cos(t)+d*Math.sin(t)).toFixed(1);return grid()+`<circle cx='200' cy='200' r='${S}' fill='none' stroke='var(--axis)' stroke-dasharray='4 4'/><path d='${p}Z' fill='var(--a)' fill-opacity='.15' stroke='var(--a)' stroke-width='3'/>`+vec(l1*Math.cos(th),l1*Math.sin(th),'var(--c)')+vec(-l2*Math.sin(th),l2*Math.cos(th),'var(--b)')},
+ out(v){const[a,b,d]=v.all,m=(a+d)/2,r=Math.hypot((a-d)/2,b);return `<div class='eq'>A = [${f(a)} ${f(b)}; ${f(b)} ${f(d)}]</div><div class='eq'>${sp('C','λ₁ = '+f(m+r))} (mũi tên xanh lá)</div><div class='eq'>${sp('B','λ₂ = '+f(m-r))} (mũi tên cam)</div><div class='eq'>λ₁ + λ₂ = ${f(a+d)} (vết); λ₁·λ₂ = ${f(a*d-b*b)} (định thức)</div>`},
+ why:'Vòng tròn nét đứt là mọi vectơ có độ dài 1. Ma trận A biến vòng tròn đó thành elip xanh.|Hai trục của elip là hai hướng đặc biệt (vectơ riêng): A chỉ kéo giãn vectơ theo hướng đó chứ không xoay nó.|Độ dài mỗi mũi tên là giá trị riêng λ, cho biết hướng đó bị kéo giãn bao nhiêu lần. Kéo b về 0 thì hai trục trùng với hai trục tọa độ, λ chính là a và d.'}
+);
+Object.assign(LV,{gcd:'Tiểu học',gauss:'THCS',ineq:'THCS',cos:'THPT',prob:'THPT',ell:'THPT',norm:'Đại học',eig:'Đại học'});
+Object.assign(LV,{log:'THPT',amgm:'THCS',sint:'THPT',lim:'THPT',lat:'THPT',tay:'Đại học'});
+mods.sort((p,q)=>ORD.indexOf(LV[p.id])-ORD.indexOf(LV[q.id]));
+const tabs=document.getElementById('tabs'),btns=[];let cur=0,last='';
+tabs.style.flexWrap='wrap';
+mods.forEach((m,i)=>{if(LV[m.id]!==last){last=LV[m.id];const l=document.createElement('span');l.textContent=last;l.style.cssText='flex-basis:100%;font-weight:800;color:var(--mut);margin-top:4px';tabs.appendChild(l)}
+ const b=document.createElement('button');b.textContent=m.name;b.setAttribute('role','tab');b.onclick=()=>show(i);tabs.appendChild(b);btns.push(b)});
+function show(i){cur=i;const m=mods[i];btns.forEach((b,j)=>b.setAttribute('aria-selected',j===i));
+ document.getElementById('ttl').textContent=m.title;document.getElementById('why').innerHTML=m.why.includes('|')?'<ol style="margin:0;padding-left:1.3em">'+m.why.split('|').map(s=>'<li style="margin-bottom:6px">'+s+'</li>').join('')+'</ol>':m.why;
+ const box=document.getElementById('ctls');box.innerHTML='';
+ m.ctl.forEach(([n,lo,hi,st,val],j)=>{const d=document.createElement('label');d.className='ctl';d.innerHTML=`<span>${n}</span><input type="range" min="${lo}" max="${hi}" step="${st}" value="${val}"><output>${f(val)}</output>`;
+  d.querySelector('input').oninput=e=>{d.querySelector('output').textContent=f(e.target.value);draw()};box.appendChild(d)});
+ draw()}
+function draw(){const m=mods[cur],all=[...document.querySelectorAll('#ctls input')].map(e=>+e.value),v={all,a:all[0],b:all[1]};
+ document.getElementById('svg').innerHTML=m.draw(v);document.getElementById('out').innerHTML=m.out(v)}
+show(0);
+</script>
+</body>
+</html>
